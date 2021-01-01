@@ -13,12 +13,20 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	hello, err := dictionary.Search(word)
-	fmt.Println("found", word, "definition:", hello)
 
-	err2 := dictionary.Add(word, definition)
+	err2 := dictionary.Update(word, "greetings updated")
 	if err2 != nil {
 		fmt.Println(err2)
+	}
+	result, _ := dictionary.Search(word)
+	fmt.Println(result)
+
+	dictionary.Delete(word)
+	result3, err3 := dictionary.Search(word)
+	if err3 != nil {
+		fmt.Println(err3)
+	} else {
+		fmt.Println(result3)
 	}
 }
 
