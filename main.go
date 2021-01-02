@@ -1,129 +1,29 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-
-	"github.com/PuerkitoBio/goquery"
+	"learngo/jobscrapper"
 )
 
-type extractedJob struct {
-	id       string
-	title    string
-	company  string
-	location string
-	salary   string
-	summary  string
-}
-
-var baseURL = "https://kr.indeed.com/jobs?q=python"
-var viewjobURL = "https://kr.indeed.com/viewjob?jk="
+var searchWord = "python"
+var baseURL = "https://kr.indeed.com/jobs?q=" + searchWord
 
 func main() {
-	jobs := []extractedJob{}
-	totalPages := getPageCounts(baseURL)
+	jobs := []jobscrapper.ExtractedJob{}
+	c := make(chan []jobscrapper.ExtractedJob)
+	totalPages := jobscrapper.GetPageCounts(baseURL)
 
 	for i := 0; i < totalPages; i++ {
-		extractedJob := getPage(i)
-		jobs = append(jobs, extractedJob...)
+		go jobscrapper.GetPage(baseURL, i, c)
 	}
 
-	// fmt.Println(jobs)
-	writeJobs(jobs)
-}
-
-func writeJobs(jobs []extractedJob) {
-	file, err := os.Create("jobs.csv")
-	checkErr(err)
-
-	w := csv.NewWriter(file)
-	defer w.Flush()
-
-	headers := []string{"URL", "Title", "Company", "Location", "Salary", "Summary"}
-
-	wErr := w.Write(headers)
-	checkErr(wErr)
-
-	for _, job := range jobs {
-		jobSlice := []string{viewjobURL + job.id, job.title, job.company, job.location, job.salary, job.summary}
-		jwErr := w.Write(jobSlice)
-		checkErr(jwErr)
+	for i := 0; i < totalPages; i++ {
+		extractedJobs := <-c
+		jobs = append(jobs, extractedJobs...)
 	}
-}
 
-func getPage(page int) []extractedJob {
-	jobs := []extractedJob{}
-	pageURL := baseURL + "&start=" + strconv.Itoa(page*10)
-	fmt.Println("Requesting:", pageURL)
-	res, err := http.Get(pageURL)
-	checkErr(err)
-	checkCode(res)
-
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	checkErr(err)
-
-	searchCards := doc.Find(".jobsearch-SerpJobCard")
-	searchCards.Each(func(i int, card *goquery.Selection) {
-		job := extractJob(card)
-		jobs = append(jobs, job)
-	})
-	return jobs
-}
-
-func extractJob(card *goquery.Selection) extractedJob {
-	id, _ := card.Attr("data-jk")
-	title := cleanString(card.Find(".title>a").Text())
-	company := cleanString(card.Find(".company").Text())
-	location := cleanString(card.Find(".location").Text())
-	salary := cleanString(card.Find(".salaryText").Text())
-	summary := cleanString(card.Find(".summary").Text())
-	return extractedJob{
-		id:       id,
-		title:    title,
-		company:  company,
-		location: location,
-		salary:   salary,
-		summary:  summary}
-}
-
-func cleanString(str string) string {
-	return strings.Join(strings.Fields(strings.TrimSpace(str)), " ")
-}
-
-func getPageCounts(url string) int {
-	pages := 0
-	res, err := http.Get(url)
-	checkErr(err)
-	checkCode(res)
-
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	checkErr(err)
-
-	doc.Find(".pagination").Each(func(i int, s *goquery.Selection) {
-		pages = s.Find("a").Length()
-	})
-	return pages
-}
-
-func checkErr(err error) {
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
-func checkCode(res *http.Response) {
-	if res.StatusCode != 200 {
-		log.Fatalln("Request failed with statuscode:", res.StatusCode)
-	}
+	jobscrapper.WriteJobs(jobs)
+	fmt.Println("Done, Extracted", len(jobs))
 }
 
 // go routine and channel - final
