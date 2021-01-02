@@ -12,8 +12,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// ExtractedJob type
-type ExtractedJob struct {
+type extractedJob struct {
 	id       string
 	title    string
 	company  string
@@ -24,8 +23,27 @@ type ExtractedJob struct {
 
 var viewjobURL = "https://kr.indeed.com/viewjob?jk="
 
-// GetPageCounts count total pages
-func GetPageCounts(url string) int {
+// Scrape Indeed by a term
+func Scrape(searchWord string) {
+	var baseURL = "https://kr.indeed.com/jobs?q=" + searchWord
+	jobs := []extractedJob{}
+	c := make(chan []extractedJob)
+	totalPages := getPageCounts(baseURL)
+
+	for i := 0; i < totalPages; i++ {
+		go getPage(baseURL, i, c)
+	}
+
+	for i := 0; i < totalPages; i++ {
+		extractedJobs := <-c
+		jobs = append(jobs, extractedJobs...)
+	}
+
+	WriteJobs(jobs)
+	fmt.Println("Done, Extracted", len(jobs))
+}
+
+func getPageCounts(url string) int {
 	pages := 0
 	res, err := http.Get(url)
 	checkErr(err)
@@ -42,10 +60,9 @@ func GetPageCounts(url string) int {
 	return pages
 }
 
-// GetPage extract all Job Cards
-func GetPage(url string, page int, mainC chan<- []ExtractedJob) {
-	jobs := []ExtractedJob{}
-	c := make(chan ExtractedJob)
+func getPage(url string, page int, mainC chan<- []extractedJob) {
+	jobs := []extractedJob{}
+	c := make(chan extractedJob)
 	pageURL := url + "&start=" + strconv.Itoa(page*10)
 	fmt.Println("Requesting:", pageURL)
 	res, err := http.Get(pageURL)
@@ -71,7 +88,7 @@ func GetPage(url string, page int, mainC chan<- []ExtractedJob) {
 }
 
 // WriteJobs write Jobs to CSV file
-func WriteJobs(jobs []ExtractedJob) {
+func WriteJobs(jobs []extractedJob) {
 	file, err := os.Create("jobs.csv")
 	checkErr(err)
 
@@ -90,14 +107,14 @@ func WriteJobs(jobs []ExtractedJob) {
 	}
 }
 
-func extractJob(card *goquery.Selection, c chan<- ExtractedJob) {
+func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	id, _ := card.Attr("data-jk")
 	title := cleanString(card.Find(".title>a").Text())
 	company := cleanString(card.Find(".company").Text())
 	location := cleanString(card.Find(".location").Text())
 	salary := cleanString(card.Find(".salaryText").Text())
 	summary := cleanString(card.Find(".summary").Text())
-	c <- ExtractedJob{
+	c <- extractedJob{
 		id:       id,
 		title:    title,
 		company:  company,

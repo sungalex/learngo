@@ -1,29 +1,9 @@
 package main
 
-import (
-	"fmt"
-	"learngo/jobscrapper"
-)
-
-var searchWord = "python"
-var baseURL = "https://kr.indeed.com/jobs?q=" + searchWord
+import "learngo/jobscrapper"
 
 func main() {
-	jobs := []jobscrapper.ExtractedJob{}
-	c := make(chan []jobscrapper.ExtractedJob)
-	totalPages := jobscrapper.GetPageCounts(baseURL)
-
-	for i := 0; i < totalPages; i++ {
-		go jobscrapper.GetPage(baseURL, i, c)
-	}
-
-	for i := 0; i < totalPages; i++ {
-		extractedJobs := <-c
-		jobs = append(jobs, extractedJobs...)
-	}
-
-	jobscrapper.WriteJobs(jobs)
-	fmt.Println("Done, Extracted", len(jobs))
+	jobscrapper.Scrape("python")
 }
 
 // go routine and channel - final
