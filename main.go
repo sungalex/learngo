@@ -1,5 +1,15 @@
 package main
 
+// Go routines and channels
+/*
+	- 메인 함수가 종료하면 go routine이 끝나던 아니던 상관없이 프로그램이 종료된다.
+	- go routine은 Non-blocking Operation 이지만,
+	  channel을 수신하는 operation(<-)은 Blocking Operation 이다.
+	  즉, "<-" Operation을 수행하면 Channel에서 message를 수신할 때까지 대기 한다.
+	- Channel를 생성할 때는 수신할 메시지의 Type을 지정해야 한다.
+	- Channel에서 message를 수신할 때는 한번에 하나의 메시지 만 수신된다.
+	  즉, go routine의 수 만큼 channel을 통해 message를 수신하는 "<-" Operation이 있어야 한다.
+*/
 import (
 	"fmt"
 	"time"
