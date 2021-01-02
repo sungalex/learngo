@@ -25,7 +25,7 @@ func main() {
 	e := echo.New()
 	e.GET("/", handleHOME)
 	e.POST("/scrape", handleScrape)
-	e.Logger.Fatal(e.Start(":1234"))
+	e.Logger.Fatal(e.Start(":1323"))
 }
 
 // go routine and channel - final
