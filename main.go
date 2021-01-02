@@ -1,9 +1,31 @@
 package main
 
-import "learngo/jobscrapper"
+import (
+	"learngo/jobscrapper"
+	"os"
+	"strings"
+
+	"github.com/labstack/echo"
+)
+
+const fileName string = "jobs.csv"
+
+func handleHOME(c echo.Context) error {
+	return c.File("home.html")
+}
+
+func handleScrape(c echo.Context) error {
+	defer os.Remove(fileName)
+	term := strings.ToLower(jobscrapper.CleanString(c.FormValue("term")))
+	jobscrapper.Scrape(term)
+	return c.Attachment(fileName, fileName)
+}
 
 func main() {
-	jobscrapper.Scrape("python")
+	e := echo.New()
+	e.GET("/", handleHOME)
+	e.POST("/scrape", handleScrape)
+	e.Logger.Fatal(e.Start(":1234"))
 }
 
 // go routine and channel - final
