@@ -1,6 +1,24 @@
 package main
 
-// for URL Checker & Go Routines
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	go sexyCount("alex")
+	sexyCount("park")
+}
+
+func sexyCount(person string) {
+	for i := 0; i < 10; i++ {
+		fmt.Println(person, "is sexy", i)
+		time.Sleep(time.Second)
+	}
+}
+
+// for URL Checker
+/*
 import (
 	"errors"
 	"fmt"
@@ -44,6 +62,7 @@ func hitUrl(url string) error {
 	}
 	return nil
 }
+*/
 
 // for mydict package
 /*
