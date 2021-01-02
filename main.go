@@ -9,10 +9,19 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+type extractedJob struct {
+	id       string
+	title    string
+	company  string
+	location string
+	salary   string
+	summary  string
+}
+
 var baseURL = "https://kr.indeed.com/jobs?q=python"
 
 func main() {
-	totalPages := getTotalPages(baseURL)
+	totalPages := getPageCounts(baseURL)
 
 	for i := 0; i < totalPages; i++ {
 		getPage(i)
@@ -21,10 +30,35 @@ func main() {
 
 func getPage(page int) {
 	pageURL := baseURL + "&start=" + strconv.Itoa(page*10)
-	fmt.Println(pageURL)
+	fmt.Println("Requesting:", pageURL)
+	res, err := http.Get(pageURL)
+	checkErr(err)
+	checkCode(res)
+
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	searchCards := doc.Find(".jobsearch-SerpJobCard")
+	searchCards.Each(func(i int, card *goquery.Selection) {
+		id, _ := card.Attr("data-jk")
+		title := card.Find(".title>a").Text()
+		company := card.Find(".company").Text()
+		location := card.Find(".location").Text()
+		salary := card.Find(".salaryText").Text()
+		summary := card.Find(".summary").Text()
+		fmt.Println("id:", id)
+		fmt.Println("title:", title)
+		fmt.Println("company:", company)
+		fmt.Println("location:", location)
+		fmt.Println("salary:", salary)
+		fmt.Println("summary:", summary)
+	})
+
 }
 
-func getTotalPages(url string) int {
+func getPageCounts(url string) int {
 	pages := 0
 	res, err := http.Get(url)
 	checkErr(err)
