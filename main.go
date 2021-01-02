@@ -1,5 +1,59 @@
 package main
 
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+
+	"github.com/PuerkitoBio/goquery"
+)
+
+var baseURL = "https://kr.indeed.com/jobs?q=python"
+
+func main() {
+	totalPages := getTotalPages(baseURL)
+
+	for i := 0; i < totalPages; i++ {
+		getPage(i)
+	}
+}
+
+func getPage(page int) {
+	pageURL := baseURL + "&start=" + strconv.Itoa(page*10)
+	fmt.Println(pageURL)
+}
+
+func getTotalPages(url string) int {
+	pages := 0
+	res, err := http.Get(url)
+	checkErr(err)
+	checkCode(res)
+
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	doc.Find(".pagination").Each(func(i int, s *goquery.Selection) {
+		pages = s.Find("a").Length()
+	})
+	return pages
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func checkCode(res *http.Response) {
+	if res.StatusCode != 200 {
+		log.Fatalln("Request failed with statuscode:", res.StatusCode)
+	}
+}
+
+// go routine and channel - final
 /*
 [Go routines and channels theory]
 	- 메인 함수가 종료하면 go routine이 끝나던 아니던 상관없이 프로그램이 종료된다.
@@ -11,7 +65,7 @@ package main
 	  즉, go routine의 수 만큼 channel을 통해 message를 수신하는 "<-" Operation이 있어야 한다.
 	- 함수 선언 시 channel type에 "chan<-"을 사용하면 read-only channel이 된다.
 */
-
+/*
 import (
 	"errors"
 	"fmt"
@@ -59,6 +113,7 @@ func hitURL(url string, c chan<- requestResult) {
 	}
 	c <- requestResult{url: url, status: status}
 }
+*/
 
 // go routine and channel - 1
 /*
