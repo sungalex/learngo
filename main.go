@@ -6,19 +6,20 @@ import (
 )
 
 func main() {
-	c := make(chan bool)
-	people := [2]string{"alex", "park"}
+	c := make(chan string)
+	people := []string{"alex", "park", "nico", "flynn"}
 	for _, people := range people {
 		go isSexy(people, c)
 	}
-	fmt.Println(<-c)
-	fmt.Println(<-c)
+	fmt.Println("Waiting for messages...")
+	for i := 0; i < len(people); i++ {
+		fmt.Println("Recived this message:", <-c)
+	}
 }
 
-func isSexy(person string, c chan bool) {
+func isSexy(person string, c chan string) {
 	time.Sleep(time.Second * 5)
-	fmt.Println(person)
-	c <- true
+	c <- person + " is sexy"
 }
 
 // for URL Checker
